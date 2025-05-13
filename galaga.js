@@ -2,13 +2,20 @@ let player;
 let playerImg;
 let enemyImg;
 
-let bullets = []; // Lista de balas
-let enemies = []; // Lista de enemigos
+let bullets = []; //Lista de balas
+let enemies = []; //Lista de enemigos
 
 let gameOver = false;
 
+// --- NUEVAS VARIABLES PARA NIVELES ---
+let level = 1;
+let maxLevel = 3;
+let levelTransition = false;
+let transitionTimer = 0;
+let win = false;
+
 function preload() {
-  playerImg = loadImage('nave.png');     // Sprite del jugador
+  playerImg = loadImage('nave.png');     // Sprite del jugador -- nave
   enemyImg = loadImage('enemy.png');   // Sprite del enemigo
 }
 
@@ -16,16 +23,24 @@ function setup() {
   createCanvas(600, 600);
   player = new Player();
 
-  // Crear 10 enemigos
-  for (let i = 0; i < 10; i++) {
-    let x = random(0, width - 40);
-    let y = random(-500, -40);
-    enemies.push(new Enemy(x, y));
-  }
+  // Crear enemigos del primer nivel
+  startLevel(level);
 }
 
 function draw() {
-  background(0);
+  // Mensaje de victoria
+  if (win) {
+    showWinMessage();
+    return;
+  }
+
+  // Transición entre niveles
+  if (levelTransition) {
+    drawTransition();
+    return;
+  }
+
+  background(0); // negro
 
   if (gameOver) {
     textAlign(CENTER, CENTER);
@@ -39,12 +54,13 @@ function draw() {
   player.update();
   player.show();
 
-  // Mostrar vidas
+  // Mostrar vidas y nivel
   fill(255);
   textSize(16);
   text("Vidas: " + player.lives, 50, 30);
+  text("Nivel: " + level, 520, 30);
 
-  // Actualizar y mostrar balas
+  // mostrar y actu bala
   for (let i = bullets.length - 1; i >= 0; i--) {
     bullets[i].update();
     bullets[i].show();
@@ -55,22 +71,23 @@ function draw() {
     }
   }
 
-  // Actualizar y mostrar enemigos
+  // mostrar y actu enemigos
   for (let i = enemies.length - 1; i >= 0; i--) {
     enemies[i].update();
     enemies[i].show();
 
-    // Colisión con balas
+    // colision bala-enemigo
     for (let j = bullets.length - 1; j >= 0; j--) {
       if (enemies[i].hitsBullet(bullets[j])) {
-        enemies.splice(i, 1); // Eliminar enemigo
-        bullets.splice(j, 1); // Eliminar bala
-        break; // Salir del loop de balas para evitar errores
+        enemies.splice(i, 1); // eliminar enemigo
+        bullets.splice(j, 1); // eliminar bala
+        break;
       }
     }
 
-    // Importante: verificar que aún existe después de colisión
+    // chequeo para evitar errores después de eliminar
     if (i < enemies.length) {
+      // colision jugador-enemigo
       if (enemies[i].hitsPlayer(player)) {
         player.lives--;
         enemies[i].reset();
@@ -80,6 +97,7 @@ function draw() {
         }
       }
 
+      // si enemigo llega al final de la pantalla
       if (enemies[i].y + enemies[i].size >= height) {
         player.lives--;
         enemies[i].reset();
@@ -90,13 +108,24 @@ function draw() {
       }
     }
   }
+
+  // --- CAMBIO DE NIVEL SI TODOS LOS ENEMIGOS FUERON ELIMINADOS ---
+  if (enemies.length === 0 && !levelTransition && !gameOver) {
+    if (level < maxLevel) {
+      level++;
+      levelTransition = true;
+      transitionTimer = millis();
+    } else {
+      win = true;
+    }
+  }
 }
 
 function keyPressed() {
-  if (key === ' ') {
+  if (key === ' ') {// boton bala
+    // Crear bala bien desde la punta de la nave
     bullets.push(new Bullet(player.x + player.width / 2, player.y));
   }
-
   if (gameOver && keyCode === ENTER) {
     restartGame();
   }
@@ -195,19 +224,52 @@ class Enemy {
 
 // -- REINICIAR JUEGO SI MORISTE --
 function restartGame() {
-
   // Reiniciar variables
   gameOver = false;
+  win = false;
+  level = 1;
   bullets = [];
   enemies = [];
 
   player = new Player();
+  startLevel(level);
+  loop();
+}
 
-  for (let i = 0; i < 10; i++) {
+// -- INICIAR UN NIVEL NUEVO --
+function startLevel(n) {
+  bullets = [];
+  enemies = [];
+
+  let enemyCount = 10 + (n - 1) * 5; // 10, 15, 20 enemigos por nivel
+
+  for (let i = 0; i < enemyCount; i++) {
     let x = random(0, width - 40);
     let y = random(-500, -40);
     enemies.push(new Enemy(x, y));
   }
+}
 
-  loop();
+// -- MOSTRAR TRANSICIÓN DE NIVEL --
+function drawTransition() {
+  let elapsed = millis() - transitionTimer;
+  background(0);
+  fill(255);
+  textSize(32);
+  textAlign(CENTER, CENTER);
+  text("Nivel " + level, width / 2, height / 2);
+
+  if (elapsed > 1500) {
+    startLevel(level);
+    levelTransition = false;
+  }
+}
+
+// -- MOSTRAR MENSAJE DE VICTORIA --
+function showWinMessage() {
+  background(0, 150, 0);
+  fill(255);
+  textSize(32);
+  textAlign(CENTER, CENTER);
+  text("¡Ganaste el juego!", width / 2, height / 2);
 }
