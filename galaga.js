@@ -1,13 +1,15 @@
 let player;
 let playerImg;
+let enemyImg;
 
-let bullets = []; //Lista de balas
-let enemies = []; //Lista de enemigos
+let bullets = []; // Lista de balas
+let enemies = []; // Lista de enemigos
 
-let gameOver = false; 
+let gameOver = false;
 
 function preload() {
-  playerImg = loadImage('nave.png'); // Sprite del jugador -- nave
+  playerImg = loadImage('nave.png');     // Sprite del jugador
+  enemyImg = loadImage('enemy.png');   // Sprite del enemigo
 }
 
 function setup() {
@@ -23,7 +25,7 @@ function setup() {
 }
 
 function draw() {
-  background(0); // negro
+  background(0);
 
   if (gameOver) {
     textAlign(CENTER, CENTER);
@@ -42,7 +44,7 @@ function draw() {
   textSize(16);
   text("Vidas: " + player.lives, 50, 30);
 
-  // mostrar y actu bala
+  // Actualizar y mostrar balas
   for (let i = bullets.length - 1; i >= 0; i--) {
     bullets[i].update();
     bullets[i].show();
@@ -53,42 +55,54 @@ function draw() {
     }
   }
 
-  // mostrar y actu enemigos
+  // Actualizar y mostrar enemigos
   for (let i = enemies.length - 1; i >= 0; i--) {
     enemies[i].update();
     enemies[i].show();
 
-    // colision jugador-enemigo
-    if (enemies[i].hitsPlayer(player)) {
-      player.lives--;
-      enemies[i].reset();
-
-      if (player.lives <= 0) {
-        gameOver = true;
+    // Colisión con balas
+    for (let j = bullets.length - 1; j >= 0; j--) {
+      if (enemies[i].hitsBullet(bullets[j])) {
+        enemies.splice(i, 1); // Eliminar enemigo
+        bullets.splice(j, 1); // Eliminar bala
+        break; // Salir del loop de balas para evitar errores
       }
     }
 
-    // si enemigo llega al final de la pantalla
-    if (enemies[i].y + enemies[i].size >= height) {
-      player.lives--;
-      enemies[i].reset();
+    // Importante: verificar que aún existe después de colisión
+    if (i < enemies.length) {
+      if (enemies[i].hitsPlayer(player)) {
+        player.lives--;
+        enemies[i].reset();
 
-      if (player.lives <= 0) {
-        gameOver = true;
+        if (player.lives <= 0) {
+          gameOver = true;
+        }
+      }
+
+      if (enemies[i].y + enemies[i].size >= height) {
+        player.lives--;
+        enemies[i].reset();
+
+        if (player.lives <= 0) {
+          gameOver = true;
+        }
       }
     }
   }
 }
 
 function keyPressed() {
-  if (key === ' ') {// boton bala
-    // Crear bala bien desde la punta de la nave
+  if (key === ' ') {
     bullets.push(new Bullet(player.x + player.width / 2, player.y));
   }
+
   if (gameOver && keyCode === ENTER) {
     restartGame();
   }
 }
+
+// ------------------ CLASES ------------------
 
 class Player {
   constructor() {
@@ -120,7 +134,7 @@ class Bullet {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.speed = 2;
+    this.speed = 5;
     this.radius = 5;
   }
 
@@ -152,8 +166,7 @@ class Enemy {
   }
 
   show() {
-    fill(255, 0, 0);
-    rect(this.x, this.y, this.size, this.size);
+    image(enemyImg, this.x, this.y, this.size, this.size);
   }
 
   hitsPlayer(player) {
@@ -165,13 +178,20 @@ class Enemy {
     );
   }
 
+  hitsBullet(bullet) {
+    return (
+      this.x < bullet.x + bullet.radius &&
+      this.x + this.size > bullet.x - bullet.radius &&
+      this.y < bullet.y + bullet.radius &&
+      this.y + this.size > bullet.y - bullet.radius
+    );
+  }
+
   reset() {
     this.y = random(-100, -40);
     this.x = random(0, width - this.size);
   }
 }
-
-
 
 // -- REINICIAR JUEGO SI MORISTE --
 function restartGame() {
@@ -189,5 +209,5 @@ function restartGame() {
     enemies.push(new Enemy(x, y));
   }
 
-  loop(); 
+  loop();
 }
