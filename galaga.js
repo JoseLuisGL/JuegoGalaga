@@ -16,6 +16,9 @@ let enemies = []; // Lista de enemigos
 let enemyBullets = []; // Lista de balas de enemigos
 
 let gameOver = false;
+let points = 0;
+let pointsTextSize = 20;
+let pointsColor; 
 
 // --- NUEVAS VARIABLES PARA NIVELES ---
 let level = 1;
@@ -39,6 +42,7 @@ function preload() {
 function setup() {
   createCanvas(600, 600);
   player = new Player();
+  pointsColor = color(255, 255, 0); 
 
   // Crear enemigos del primer nivel
   startLevel(level);
@@ -71,11 +75,16 @@ function draw() {
   player.update();
   player.show();
 
-  // Mostrar vidas y nivel
+  // Mostrar vidas, nivel y puntuación
   fill(255);
-  textSize(16);
+  textSize(20);
   text("Vidas: " + player.lives, 50, 30);
-  text("Nivel: " + level, 520, 30);
+  text("Nivel: " + level, width/2 - 30, 30);
+  
+  // Mostrar puntuación (derecha superior)
+  fill(pointsColor);
+  textSize(pointsTextSize);
+  text("Puntos: " + points, width - 150, 30);
 
   // mostrar y actu bala
   for (let i = bullets.length - 1; i >= 0; i--) {
@@ -123,11 +132,14 @@ function draw() {
         // Reducir vida del enemigo o eliminarlo
         enemySound.setVolume(0.5);
         enemySound.play();
+        points += 1;
+
         if (enemies[i].isStrong) {
           enemies[i].hitsTaken++;
           bullets.splice(j, 1);
           if (enemies[i].hitsTaken >= 3) {
             enemies.splice(i, 1);
+            points += 3;
           }
         } 
         else if (enemies[i].isBoss) {
@@ -135,6 +147,7 @@ function draw() {
           bullets.splice(j, 1);
           if (enemies[i].hitsTaken >= enemies[i].maxHits) {
             enemies.splice(i, 1);
+            points += 10;
           }
         } 
         else {
@@ -421,7 +434,7 @@ function restartGame() {
     currentMusic = normalMusic;
   }
 
-
+  points = 0;
   player = new Player();
   startLevel(level);
   loop();
@@ -535,6 +548,9 @@ function showWinMessage() {
   textSize(32);
   textAlign(CENTER, CENTER);
   text("¡Ganaste el juego!", width / 2, height / 2);
+
+  textSize(28);
+  text("Puntuación final: " + points, width / 2, height / 2 + 60);
 
    // Detener toda la música al ganar
   if (bossMusic) bossMusic.stop();
